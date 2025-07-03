@@ -1,0 +1,58 @@
+{
+  "kind": "collectionType",
+  "collectionName": "data_acts",
+  "info": {
+    "singularName": "data-act",
+    "pluralName": "data-acts",
+    "displayName": "data-act"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "type_offre": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "Accord",
+        "Convention",
+        "Plateforme ",
+        "Projet pilote"
+      ]
+    },
+    "description": {
+      "type": "blocks",
+      "required": true
+    },
+    "statuts": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "Status_1",
+        "Status_2",
+        "Status_3"
+      ]
+    },
+    "countries": {
+      "type": "string",
+      "required": true
+    },
+    "opportunity": {
+      "type": "boolean",
+      "required": true
+    },
+    "obligations": {
+      "type": "boolean",
+      "required": true
+    },
+    "valide_dates": {
+      "type": "string",
+      "required": true
+    }
+  }
+}
