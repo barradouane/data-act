@@ -53,6 +53,9 @@
     "valide_dates": {
       "type": "string",
       "required": true
+    },
+    "docId": {
+      "type": "uid"
     }
   }
 }
