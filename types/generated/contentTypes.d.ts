@@ -439,7 +439,9 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
       ['Status_1', 'Status_2', 'Status_3']
     > &
       Schema.Attribute.Required;
-    title: Schema.Attribute.String & Schema.Attribute.Required;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     type_offre: Schema.Attribute.Enumeration<
       ['Accord', 'Convention', 'Plateforme', 'Projet pilote']
     > &

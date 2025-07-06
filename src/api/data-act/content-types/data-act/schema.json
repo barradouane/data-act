@@ -13,7 +13,8 @@
   "attributes": {
     "title": {
       "type": "string",
-      "required": true
+      "required": true,
+      "unique": true
     },
     "type_offre": {
       "type": "enumeration",
