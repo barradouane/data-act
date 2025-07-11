@@ -181,7 +181,7 @@ async function deleteMissingStrapiEntries(strapiData, titles, url, token) {
   );
 }
 
-// Main Lambda function
+// Main Lambda 
 export const handler = async () => {
   try {
     const fileKeys = await listFilesFromS3(BUCKET);
