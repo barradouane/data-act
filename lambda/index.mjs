@@ -1,150 +1,223 @@
-import axios from "axios"
-import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3"
-import { parse as csvParse } from "csv-parse/sync"
-import * as XLSX from "xlsx"
+import axios from "axios";
+import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { parse as csvParse } from "csv-parse/sync";
+import * as XLSX from "xlsx";
 
-const s3 = new S3Client({ region: "eu-west-3" })
+const s3 = new S3Client({ region: "eu-west-3" });
+const BUCKET = "data-act-bucket";
+const STRAPI_URL = process.env.StrapiUrl;
+const STRAPI_TOKEN = process.env.StrapiToken;
 
-const url = "https://talented-sunrise-fed78168b8.strapiapp.com/api/data-acts"
-const token = "f0e9d7751b936f544dd32e88f193f67dd5c7e2454d282d3fba0aa0a6a51f9a9a21cf18c6c0a58f467383d7d780d650fd0052b1b264e2691afbe122bd108ef5cb64953763ce87cb233df28f71d9cdd3610c63f01e1baba6d74424cbaed242217d0fd8e8a2acf7ce17c5efe6753012765b7d2ba375b69ed77bbe9c071ed42d32b7"
+// Allowed values for validation
+const VALID_TYPE_OFFRE = ["Accord", "Convention", "Plateforme", "Projet pilote"];
+const VALID_STATUTS = ["Status_1", "Status_2", "Status_3"];
 
-async function main() {
-  // Je liste les fichiers du bucket
-  let files
+// Convert string or boolean-like value to true/false
+function parseBool(val) {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") return val.trim().toLowerCase() === "true";
+  return false;
+}
+
+// Validate and clean one row of data
+function validateDataRow(row) {
+  const errors = [];
+
+  if (!row.title || typeof row.title !== "string" || !row.title.trim()) errors.push("Missing or invalid title");
+  const typeOffre = row["Type d'offre"] || row.type_offre;
+  if (!VALID_TYPE_OFFRE.includes(typeOffre)) errors.push(`Invalid Type d'offre: ${typeOffre}`);
+  const statuts = row.statuts || row.Status;
+  if (!VALID_STATUTS.includes(statuts)) errors.push(`Invalid statuts: ${statuts}`);
+
+  let countries = "";
+  if (Array.isArray(row.Countries)) countries = row.Countries.join(",");
+  else if (typeof row.Countries === "string") countries = row.Countries;
+
+  const opportunity = parseBool(row.Opportunity ?? row.opportunity);
+  const obligations = parseBool(row.Obligations ?? row.obligations);
+  const valide_dates = row["valide-dates"] || row.valide_dates;
+
+  const data = {
+    title: row.title,
+    "Type d'offre": typeOffre,
+    description: row.description,
+    statuts: statuts,
+    countries: countries,
+    opportunity: opportunity,
+    obligations: obligations,
+    "valide-dates": valide_dates,
+  };
+
+  return { valid: errors.length === 0, errors, data };
+}
+
+// List all CSV or Excel files from S3
+async function listFilesFromS3(bucket) {
   try {
-    files = await s3.send(new ListObjectsV2Command({ Bucket: "data-act-bucket" }))
+    const files = await s3.send(new ListObjectsV2Command({ Bucket: bucket }));
+    return (files.Contents || [])
+      .map(f => f.Key)
+      .filter(k => k.endsWith(".csv") || k.endsWith(".xlsx") || k.endsWith(".xls"));
   } catch (e) {
-    console.log("bucket erreur")
-    return
+    console.error("Error while listing files from S3", e);
+    throw e;
   }
+}
 
-  let fileKeys = []
-  for (let k in files.Contents) {
-    let kk = files.Contents[k].Key
-    if (kk.endsWith(".csv") || kk.endsWith(".xlsx") || kk.endsWith(".xls")) {
-      fileKeys.push(kk)
-    }
+// Parse CSV or Excel file and return data
+async function parseFile(buffer, filename) {
+  if (filename.endsWith(".csv")) {
+    return csvParse(Buffer.from(buffer).toString(), { columns: true, skip_empty_lines: true, trim: true });
+  } else {
+    const wb = XLSX.read(Buffer.from(buffer), { type: "buffer" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws);
   }
+}
 
-  let titres = []
-  let tout = {}
-  for (let i = 0; i < fileKeys.length; i++) {
-    let f = fileKeys[i]
-    let obj = await s3.send(new GetObjectCommand({ Bucket: "data-act-bucket", Key: f }))
-    let buf = await obj.Body.transformToByteArray()
-    let rows
-    if (f.endsWith(".csv")) {
-      rows = csvParse(Buffer.from(buf).toString(), { columns: true, skip_empty_lines: true, trim: true })
-    } else {
-      let wb = XLSX.read(Buffer.from(buf), { type: "buffer" })
-      let ws = wb.Sheets[wb.SheetNames[0]]
-      rows = XLSX.utils.sheet_to_json(ws)
-    }
-    for (let z = 0; z < rows.length; z++) {
-      let r = rows[z]
-      if (r.title && r.title.trim() != "") {
-        titres.push(r.title)
-        tout[r.title] = r // Ecrase si doublons
-      }
-    }
-  }
+// Fetch all Strapi entries using pagination
+async function getStrapiData(url, token) {
+  let all = [];
+  let page = 1, hasNext = true;
 
-  // Je récupère tout de Strapi
-  let dataStrapi = {}
-  let page = 1
-  let ok = true
-  while (ok) {
-    let res = await axios.get(url + "?pagination[page]=" + page + "&pagination[pageSize]=100", {
+  while (hasNext) {
+    const res = await axios.get(`${url}?pagination[page]=${page}&pagination[pageSize]=100`, {
       headers: { Authorization: `Bearer ${token}` }
-    })
-    let arr = res.data.data
-    for (let j = 0; j < arr.length; j++) {
-      let e = arr[j]
-      if (e.title) dataStrapi[e.title] = e
-    }
-    if (page >= (res.data.meta?.pagination?.pageCount || 1)) ok = false
-    page++
+    });
+    all.push(...res.data.data);
+    const pageCount = res.data.meta?.pagination?.pageCount || 1;
+    hasNext = page < pageCount;
+    page++;
   }
 
-  // Je crée ou update si c'est différent
-  for (let k = 0; k < titres.length; k++) {
-    let t = titres[k]
-    let row = tout[t]
-    let e = dataStrapi[t]
+  const entries = {};
+  for (const e of all) if (e.title) entries[e.title] = e;
+  return entries;
+}
 
-    let body = {
-      title: row.title || "",
-      type_offre: row["Type d'offre"] || row.type_offre || "",
-      description: [
-        { type: "paragraph", children: [{ text: row.description || "", type: "text" }] }
-      ],
-      statuts: row.statuts || "",
-      countries: row.countries || row.Countries || "",
-      opportunity: (row.opportunity ?? row.Opportunity ?? "").toString().toLowerCase() === "true",
-      obligations: (row.obligations ?? row.Obligations ?? "").toString().toLowerCase() === "true",
-      valide_dates: row["valide-dates"] || row.valide_dates || "",
+// Create or update data in Strapi
+async function syncStrapi(dataRows, strapiData, url, token) {
+  await Promise.all(dataRows.map(async row => {
+    const { valid, errors, data } = validateDataRow(row);
+    if (!valid) {
+      console.warn(`[IGNORED] "${row.title || "(no title)"}":`, errors);
+      return;
     }
 
-    let isSame = false
-    if (e) {
-      // On regarde si c'est pareil mais on compare tout d'un coup
+    const body = {
+      title: data.title,
+      type_offre: data["Type d'offre"],
+      description: [
+        { type: "paragraph", children: [{ text: data.description || "", type: "text" }] }
+      ],
+      statuts: data.statuts || "",
+      countries: data.countries || "",
+      opportunity: data.opportunity,
+      obligations: data.obligations,
+      valide_dates: data["valide-dates"] || "",
+    };
+
+    const existing = strapiData[data.title];
+    let isSame = false;
+
+    if (existing) {
       let compareA = JSON.stringify({
-        title: e.title,
-        type_offre: e.type_offre,
-        description: (Array.isArray(e.description) && e.description[0]?.children?.[0]?.text)
-          ? e.description[0].children[0].text
-          : (typeof e.description === "string" ? e.description : ""),
-        statuts: e.statuts,
-        countries: e.countries,
-        opportunity: e.opportunity,
-        obligations: e.obligations,
-        "valide-dates": e.valide_dates
-      })
+        title: existing.title,
+        type_offre: existing.type_offre,
+        description: (Array.isArray(existing.description) && existing.description[0]?.children?.[0]?.text)
+          ? existing.description[0].children[0].text : "",
+        statuts: existing.statuts,
+        countries: existing.countries,
+        opportunity: existing.opportunity,
+        obligations: existing.obligations,
+        "valide-dates": existing.valide_dates
+      });
       let compareB = JSON.stringify({
         title: body.title,
         type_offre: body.type_offre,
-        description: row.description || "",
+        description: data.description || "",
         statuts: body.statuts,
         countries: body.countries,
         opportunity: body.opportunity,
         obligations: body.obligations,
         "valide-dates": body.valide_dates
-      })
-      if (compareA == compareB) isSame = true
+      });
+      if (compareA === compareB) isSame = true;
     }
 
-    if (e) {
-      if (!isSame) {
-        await axios.put(url + "/" + e.documentId, { data: body }, {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-        })
-        console.log("update", t)
+    try {
+      if (existing) {
+        if (!isSame) {
+          await axios.put(url + "/" + existing.documentId, { data: body }, {
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+          });
+          console.log("update", data.title);
+        }
       } else {
-        console.log("pareil", t)
+        await axios.post(url + "/", { data: body }, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+        });
+        console.log("add", data.title);
       }
-    } else {
-      await axios.post(url + "/", { data: body }, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-      })
-      console.log("ajoute", t)
+    } catch (e) {
+      console.error("Error syncing Strapi for", data.title, e.message);
     }
-  }
-
-  // Je supprime tout ce qui n'est plus dans le bucket
-  for (let t in dataStrapi) {
-    if (!titres.includes(t)) {
-      try {
-        await axios.delete(url + "/" + dataStrapi[t].documentId, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        console.log("supprimé", t)
-      } catch (e) {
-        console.log("déjà supprimé ou erreur", t)
-      }
-    }
-  }
-
-  console.log("fini")
+  }));
 }
 
-export const handler = main
+// Delete entries in Strapi that don't exist anymore
+async function deleteMissingStrapiEntries(strapiData, titles, url, token) {
+  await Promise.all(
+    Object.keys(strapiData).map(t => {
+      if (!titles.includes(t)) {
+        return axios.delete(url + "/" + strapiData[t].documentId, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then(() => console.log("deleted", t))
+          .catch(e => console.warn("delete error", t, e.message));
+      }
+      return Promise.resolve();
+    })
+  );
+}
+
+// Main Lambda function
+export const handler = async () => {
+  try {
+    const fileKeys = await listFilesFromS3(BUCKET);
+
+    // Read and parse each file
+    const filesData = await Promise.all(
+      fileKeys.map(async key => {
+        const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+        const buf = await obj.Body.transformToByteArray();
+        const rows = await parseFile(buf, key);
+        return rows;
+      })
+    );
+
+    // Prepare data, clean and deduplicate
+    let titles = [];
+    let allRows = {};
+    for (const rows of filesData) {
+      for (const r of rows) {
+        const check = validateDataRow(r);
+        if (check.valid && r.title && r.title.trim() !== "") {
+          titles.push(r.title);
+          allRows[r.title] = r;
+        } else if (!check.valid) {
+          console.warn(`Skipped row [${r.title || "no title"}]:`, check.errors);
+        }
+      }
+    }
+
+    const allRowsArr = Object.values(allRows);
+    const strapiData = await getStrapiData(STRAPI_URL, STRAPI_TOKEN);
+    await syncStrapi(allRowsArr, strapiData, STRAPI_URL, STRAPI_TOKEN);
+    await deleteMissingStrapiEntries(strapiData, titles, STRAPI_URL, STRAPI_TOKEN);
+    console.log(`Done. ${titles.length} items processed.`);
+  } catch (err) {
+    console.error("Lambda error", err);
+    throw err;
+  }
+};
