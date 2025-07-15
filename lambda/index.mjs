@@ -3,7 +3,10 @@ import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/clien
 import { parse as csvParse } from "csv-parse/sync";
 import * as XLSX from "xlsx";
 
+// Create S3 client
 const s3 = new S3Client({ region: "eu-west-3" });
+
+// S3 bucket and Strapi config
 const BUCKET = "data-act-bucket";
 const STRAPI_URL = process.env.StrapiUrl;
 const STRAPI_TOKEN = process.env.StrapiToken;
@@ -30,8 +33,16 @@ function validateDataRow(row) {
   if (!VALID_STATUTS.includes(statuts)) errors.push(`Invalid statuts: ${statuts}`);
 
   let countries = "";
-  if (Array.isArray(row.Countries)) countries = row.Countries.join(",");
-  else if (typeof row.Countries === "string") countries = row.Countries;
+if (typeof row.countries === "string") {
+  countries = row.countries.trim();
+} else if (typeof row.Countries === "string") {
+  countries = row.Countries.trim(); 
+} else if (Array.isArray(row.Countries)) {
+  countries = row.Countries.join(",");
+}
+console.log(`Country value for "${row.title}":`, countries);
+
+
 
   const opportunity = parseBool(row.Opportunity ?? row.opportunity);
   const obligations = parseBool(row.Obligations ?? row.obligations);
