@@ -1,69 +1,112 @@
-# React + TypeScript + Vite
+# DataAct Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend dashboard built with **React + TypeScript + TailwindCSS**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- Secure HTTPS communication with Strapi backend via a local proxy
+- API authentication using custom `X-API-KEY` header
+- Interactive chart interface (ECharts) displaying country-level initiatives
+- Responsive tooltips and mobile fallback for accessibility
+- Modular and typed architecture (custom hooks, reusable components, typed API)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- React (Vite)
+- TypeScript
+- Tailwind CSS
+- ECharts for React
+- Node.js (Express proxy server for secure communication)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Environment Configuration
+
+The project uses environment variables for secure configuration:
+
+- Frontend: `.env` at the root of the project
+- Backend proxy: `.env` inside `src/server/`
+
+> Example files are provided:
+>
+> - `.env.example` (frontend)
+> - `src/server/.env.example` (backend)
+
+Make sure to **rename and fill in** these files with your actual values.  
+The `VITE_API_KEY` (frontend) and `API_KEY` (backend) must match exactly to allow secure communication.
+
+---
+
+## Generate HTTPS Certificates
+
+To enable local HTTPS (required for secure backend communication), generate self-signed certificates:
+
+```bash
+cd src/server
+mkdir certs
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Getting Started
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/data-act.git
+cd data-act
 ```
+
+### 2. Install frontend dependencies
+
+```bash
+npm install
+```
+
+### 3. Create environment files
+
+```bash
+cp .env.example .env
+cp src/server/.env.example src/server/.env
+```
+
+Edit both `.env` files and fill in your actual values.
+
+### 4. Generate HTTPS certificates (if not done yet)
+
+```bash
+cd src/server
+mkdir certs
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365
+```
+
+### 5. Start the backend proxy server
+
+```bash
+cd src/server
+npm install
+npm start
+```
+
+You should see:
+
+```
+  Proxy HTTPS launched at https://localhost:4000
+```
+
+### 6. Start the frontend app
+
+```bash
+cd ../..
+npm run dev
+```
+
+Access your dashboard at [http://localhost:5173](http://localhost:5173)
+
+---
+
