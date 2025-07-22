@@ -1,0 +1,55 @@
+{
+  "kind": "collectionType",
+  "collectionName": "import_errors",
+  "info": {
+    "singularName": "import-error",
+    "pluralName": "import-errors",
+    "displayName": "import-error"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "type_offre": {
+      "type": "enumeration",
+      "enum": [
+        "Plateforme",
+        "Accord",
+        "Convention"
+      ]
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "statuts": {
+      "type": "enumeration",
+      "enum": [
+        "Status_1",
+        "Status_2",
+        "Status_3"
+      ]
+    },
+    "countries": {
+      "type": "string"
+    },
+    "opportunity": {
+      "type": "boolean"
+    },
+    "obligations": {
+      "type": "boolean"
+    },
+    "valide_dates": {
+      "type": "string"
+    },
+    "errors": {
+      "type": "text"
+    },
+    "filename": {
+      "type": "string"
+    }
+  }
+}
