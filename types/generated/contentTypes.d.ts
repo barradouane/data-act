@@ -453,6 +453,45 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiImportErrorImportError extends Struct.CollectionTypeSchema {
+  collectionName: 'import_errors';
+  info: {
+    displayName: 'import-error';
+    pluralName: 'import-errors';
+    singularName: 'import-error';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    countries: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    errors: Schema.Attribute.Text;
+    filename: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::import-error.import-error'
+    > &
+      Schema.Attribute.Private;
+    obligations: Schema.Attribute.Boolean;
+    opportunity: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
+    title: Schema.Attribute.String;
+    type_offre: Schema.Attribute.Enumeration<
+      ['Accord', 'Convention', 'Plateforme']
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    valide_dates: Schema.Attribute.String;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -963,6 +1002,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::data-act.data-act': ApiDataActDataAct;
+      'api::import-error.import-error': ApiImportErrorImportError;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
