@@ -1,3 +1,4 @@
+import "dotenv/config";
 import axios from "axios";
 import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { parse as csvParse } from "csv-parse/sync";
@@ -329,3 +330,6 @@ export const handler = async () => {
     throw err;
   }
 };
+if (process.env.LOCAL === "true") {
+  handler();
+}
