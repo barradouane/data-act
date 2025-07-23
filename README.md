@@ -1,4 +1,4 @@
-# lLancer AWS Lambda  avec Docker + Strapi + S3
+# Lancer AWS Lambda  avec Docker + Strapi + S3
 
 Ce projet exécute localement une Lambda AWS (fichier `index.mjs`) avec Docker. Elle :
 - Lit des fichiers CSV ou Excel depuis un bucket S3
