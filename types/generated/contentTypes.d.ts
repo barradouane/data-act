@@ -478,7 +478,7 @@ export interface ApiGbuGbu extends Struct.CollectionTypeSchema {
     statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
     title: Schema.Attribute.String;
     type_offre: Schema.Attribute.Enumeration<
-      ['Accord', 'Platerforme', 'Convention', 'Projet pilote']
+      ['Accord', 'Plateforme', 'Convention', 'Projet pilote']
     >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
