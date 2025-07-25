@@ -54,6 +54,12 @@
     "valide_dates": {
       "type": "string",
       "required": true
+    },
+    "gbuses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::gbu.gbu",
+      "mappedBy": "data_acts"
     }
   }
 }

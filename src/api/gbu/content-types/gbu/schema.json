@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "gbus",
+  "info": {
+    "singularName": "gbu",
+    "pluralName": "gbus",
+    "displayName": "gbu"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "data_acts": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::data-act.data-act",
+      "inversedBy": "gbuses"
+    },
+    "GBU": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "GBU1",
+        "GBU2",
+        "GBU3",
+        "GBU4"
+      ]
+    }
+  }
+}

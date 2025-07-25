@@ -426,6 +426,7 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks & Schema.Attribute.Required;
+    gbuses: Schema.Attribute.Relation<'manyToMany', 'api::gbu.gbu'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -450,6 +451,36 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     valide_dates: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
+export interface ApiGbuGbu extends Struct.CollectionTypeSchema {
+  collectionName: 'gbus';
+  info: {
+    displayName: 'gbu';
+    pluralName: 'gbus';
+    singularName: 'gbu';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    data_acts: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::data-act.data-act'
+    >;
+    GBU: Schema.Attribute.Enumeration<['GBU1', 'GBU2', 'GBU3', 'GBU4']> &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::gbu.gbu'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -1002,6 +1033,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::data-act.data-act': ApiDataActDataAct;
+      'api::gbu.gbu': ApiGbuGbu;
       'api::import-error.import-error': ApiImportErrorImportError;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
