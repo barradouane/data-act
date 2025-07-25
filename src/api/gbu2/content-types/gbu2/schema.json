@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "gbus",
+  "collectionName": "gbu2s",
   "info": {
-    "singularName": "gbu",
-    "pluralName": "gbus",
-    "displayName": "gbu1"
+    "singularName": "gbu2",
+    "pluralName": "gbu2s",
+    "displayName": "gbu2"
   },
   "options": {
     "draftAndPublish": true
@@ -18,9 +18,9 @@
       "type": "enumeration",
       "enum": [
         "Accord",
-        "Platerforme",
         "Convention",
-        "Projet pilote"
+        "Projet pilote",
+        "Plateforme"
       ]
     },
     "description": {

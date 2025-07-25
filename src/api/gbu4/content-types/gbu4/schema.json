@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "gbus",
+  "collectionName": "gbu4s",
   "info": {
-    "singularName": "gbu",
-    "pluralName": "gbus",
-    "displayName": "gbu1"
+    "singularName": "gbu4",
+    "pluralName": "gbu4s",
+    "displayName": "gbu4"
   },
   "options": {
     "draftAndPublish": true
@@ -18,7 +18,7 @@
       "type": "enumeration",
       "enum": [
         "Accord",
-        "Platerforme",
+        "Plateforme",
         "Convention",
         "Projet pilote"
       ]

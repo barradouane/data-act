@@ -426,7 +426,6 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks & Schema.Attribute.Required;
-    gbuses: Schema.Attribute.Relation<'manyToMany', 'api::gbu.gbu'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -457,7 +456,7 @@ export interface ApiDataActDataAct extends Struct.CollectionTypeSchema {
 export interface ApiGbuGbu extends Struct.CollectionTypeSchema {
   collectionName: 'gbus';
   info: {
-    displayName: 'gbu';
+    displayName: 'gbu1';
     pluralName: 'gbus';
     singularName: 'gbu';
   };
@@ -465,22 +464,128 @@ export interface ApiGbuGbu extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    countries: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    data_acts: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::data-act.data-act'
-    >;
-    GBU: Schema.Attribute.Enumeration<['GBU1', 'GBU2', 'GBU3', 'GBU4']> &
-      Schema.Attribute.Required;
+    description: Schema.Attribute.Blocks;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::gbu.gbu'> &
       Schema.Attribute.Private;
+    obligations: Schema.Attribute.Boolean;
+    opportunity: Schema.Attribute.Boolean;
     publishedAt: Schema.Attribute.DateTime;
+    statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
+    title: Schema.Attribute.String;
+    type_offre: Schema.Attribute.Enumeration<
+      ['Accord', 'Platerforme', 'Convention', 'Projet pilote']
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    valide_dates: Schema.Attribute.String;
+  };
+}
+
+export interface ApiGbu2Gbu2 extends Struct.CollectionTypeSchema {
+  collectionName: 'gbu2s';
+  info: {
+    displayName: 'gbu2';
+    pluralName: 'gbu2s';
+    singularName: 'gbu2';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    countries: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::gbu2.gbu2'> &
+      Schema.Attribute.Private;
+    obligations: Schema.Attribute.Boolean;
+    opportunity: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
+    title: Schema.Attribute.String;
+    type_offre: Schema.Attribute.Enumeration<
+      ['Accord', 'Convention', 'Projet pilote', 'Plateforme']
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    valide_dates: Schema.Attribute.String;
+  };
+}
+
+export interface ApiGbu3Gbu3 extends Struct.CollectionTypeSchema {
+  collectionName: 'gbu3s';
+  info: {
+    displayName: 'gbu3';
+    pluralName: 'gbu3s';
+    singularName: 'gbu3';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    countries: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::gbu3.gbu3'> &
+      Schema.Attribute.Private;
+    obligations: Schema.Attribute.Boolean;
+    opportunity: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
+    title: Schema.Attribute.String;
+    type_offre: Schema.Attribute.Enumeration<
+      ['Accord', 'Convention', 'Projet pilote', 'Plateforme']
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    valide_dates: Schema.Attribute.String;
+  };
+}
+
+export interface ApiGbu4Gbu4 extends Struct.CollectionTypeSchema {
+  collectionName: 'gbu4s';
+  info: {
+    displayName: 'gbu4';
+    pluralName: 'gbu4s';
+    singularName: 'gbu4';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    countries: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::gbu4.gbu4'> &
+      Schema.Attribute.Private;
+    obligations: Schema.Attribute.Boolean;
+    opportunity: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    statuts: Schema.Attribute.Enumeration<['Status_1', 'Status_2', 'Status_3']>;
+    title: Schema.Attribute.String;
+    type_offre: Schema.Attribute.Enumeration<
+      ['Accord', 'Plateforme', 'Convention', 'Projet pilote']
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    valide_dates: Schema.Attribute.String;
   };
 }
 
@@ -1034,6 +1139,9 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::data-act.data-act': ApiDataActDataAct;
       'api::gbu.gbu': ApiGbuGbu;
+      'api::gbu2.gbu2': ApiGbu2Gbu2;
+      'api::gbu3.gbu3': ApiGbu3Gbu3;
+      'api::gbu4.gbu4': ApiGbu4Gbu4;
       'api::import-error.import-error': ApiImportErrorImportError;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
