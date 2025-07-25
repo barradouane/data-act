@@ -3,6 +3,7 @@ import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/clien
 import { parse as csvParse } from "csv-parse/sync";
 import * as XLSX from "xlsx";
 
+// AWS and Strapi configuration
 const s3 = new S3Client({ region: "eu-west-3" });
 const BUCKET = "data-act-bucket";
 const STRAPI_URL = process.env.StrapiUrl;
@@ -11,6 +12,7 @@ const STRAPI_TOKEN = process.env.StrapiToken;
 // Enum constraints for validation
 const VALID_TYPE_OFFRE = ["Accord", "Convention", "Plateforme", "Projet pilote"];
 const VALID_STATUTS = ["Status_1", "Status_2", "Status_3"];
+
 // Mapping CSV keys to Strapi model fields
 const FIELD_MAP = {
   title: "title",
@@ -40,7 +42,8 @@ function levenshtein(a, b) {
   }
   return matrix[a.length][b.length];
 }
-// Find the closest matching field key from CSV input to expected field names
+
+// Find the closest matching field key from CSV input
 function matchClosestField(inputKey) {
   const cleaned = inputKey.trim().toLowerCase().replace(/[^a-z]/g, "");
   let bestMatch = null;
@@ -56,7 +59,7 @@ function matchClosestField(inputKey) {
   return bestMatch;
 }
 
-// Normalize CSV row keys using fuzzy matching to FIELD_MAP keys
+// Normalize CSV row keys using FIELD_MAP
 function normalizeRowKeys(row) {
   const normalized = {};
   for (const key in row) {
@@ -66,21 +69,21 @@ function normalizeRowKeys(row) {
   return normalized;
 }
 
-// Trim strings and convert values to string
+// Sanitize string or convert numbers to string
 function sanitizeString(value) {
   if (typeof value === "string") return value.trim();
   if (typeof value === "number") return value.toString();
   return "";
 }
-// Convert loose string/boolean-like values into actual boolean
+
+// Convert string-like boolean to actual boolean
 function parseBool(val) {
   if (typeof val === "boolean") return val;
   if (typeof val === "string") return val.trim().toLowerCase() === "true";
   return false;
 }
+
 // Validate and clean a single row of input data
-// - Ensures required fields exist and enums are valid
-// - Returns structured data + validation errors
 function validateDataRow(row) {
   const normalizedRow = normalizeRowKeys(row);
   const errors = [];
@@ -120,8 +123,7 @@ function validateDataRow(row) {
   return { valid: errors.length === 0, errors, data, raw: normalizedRow };
 }
 
-//  Prepare a cleaned object for error reporting
-// - Coerces types and normalizes invalid values (e.g. enum fallbacks)
+// Prepare a cleaned object for error reporting
 function cleanForErrorReport(row) {
   const normalized = normalizeRowKeys(row);
   const cleaned = {};
@@ -140,8 +142,8 @@ function cleanForErrorReport(row) {
   }
   return cleaned;
 }
+
 // Push invalid entries to the `import-errors` collection in Strapi
-// - Avoids duplicate reports using title + filename
 async function reportErrorToStrapi(row, errors, filename) {
   try {
     const cleanedRow = cleanForErrorReport(row);
@@ -172,14 +174,16 @@ async function reportErrorToStrapi(row, errors, filename) {
     console.warn("Failed to report error", e.message);
   }
 }
-//  List all .csv/.xlsx/.xls files in the S3 bucket
+
+// List all .csv/.xlsx/.xls files in the S3 bucket
 async function listFilesFromS3(bucket) {
   const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket }));
   return (res.Contents || [])
     .map(obj => obj.Key)
     .filter(key => key.endsWith(".csv") || key.endsWith(".xlsx") || key.endsWith(".xls"));
 }
-//Parse CSV or Excel file buffer into structured row objects
+
+// Parse CSV or Excel file into structured row objects
 async function parseFile(buffer, filename) {
   if (filename.endsWith(".csv")) {
     return csvParse(Buffer.from(buffer).toString(), {
@@ -193,8 +197,8 @@ async function parseFile(buffer, filename) {
     return XLSX.utils.sheet_to_json(ws);
   }
 }
-//fetch all current entries from Strapi with pagination
-// - Used for deduplication and update detection
+
+// Fetch all current entries from Strapi (for deduplication)
 async function getStrapiData(url, token) {
   let all = [];
   let page = 1, hasNext = true;
@@ -212,9 +216,17 @@ async function getStrapiData(url, token) {
   for (const e of all) if (e.title) entries[e.title] = e;
   return entries;
 }
-// Sync valid rows to Strapi
-// - Create or update entries based on content diff
-// - Avoid unnecessary writes when data hasn't changed
+
+// Normalize rich-text description for comparison
+function normalizeDescription(desc) {
+  if (!desc) return "";
+  if (Array.isArray(desc) && desc[0]?.children?.[0]?.text) {
+    return desc[0].children[0].text;
+  }
+  return typeof desc === "string" ? desc : "";
+}
+
+// Synchronize entries with Strapi (create or update)
 async function syncStrapi(dataRows, strapiData, url, token) {
   await Promise.all(dataRows.map(async row => {
     const { valid, errors, data } = validateDataRow(row);
@@ -238,7 +250,7 @@ async function syncStrapi(dataRows, strapiData, url, token) {
       const compareA = JSON.stringify({
         title: existing.title,
         type_offre: existing.type_offre,
-        description: (Array.isArray(existing.description) && existing.description[0]?.children?.[0]?.text) ? existing.description[0].children[0].text : "",
+        description: normalizeDescription(existing.description),
         statuts: existing.statuts,
         countries: existing.countries,
         opportunity: existing.opportunity,
@@ -271,61 +283,86 @@ async function syncStrapi(dataRows, strapiData, url, token) {
         });
       }
     } catch (e) {
-      console.error("Error syncing Strapi for", data.title, e.message);
+      console.error("Error syncing entry:", data.title, e.message);
     }
   }));
 }
-//  Delete entries from Strapi that are no longer present in S3 files
+
+// Delete entries that are no longer present in the import
 async function deleteMissingStrapiEntries(strapiData, titles, url, token) {
   await Promise.all(
     Object.keys(strapiData).map(t => {
       if (!titles.includes(t)) {
         return axios.delete(url + "/" + strapiData[t].documentId, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(e => console.warn("delete error", t, e.message));
+        }).catch(e => console.warn("Failed to delete entry:", t, e.message));
       }
     })
   );
 }
 
-// AWS Lambda handler: orchestrates the full import/sync flow
-// - 1. Fetch file list from S3
-// - 2. Parse each file and validate data
-// - 3. Report errors to Strapi
-// - 4. Sync valid data (create/update)
-// - 5. Delete outdated entries in Strapi
+// Lambda main handler
 export const handler = async () => {
   try {
     const fileKeys = await listFilesFromS3(BUCKET);
-    const strapiData = await getStrapiData(STRAPI_URL, STRAPI_TOKEN);
 
-    const filesParsed = await Promise.all(fileKeys.map(async key => {
-      const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-      const buf = await obj.Body.transformToByteArray();
-      const rows = await parseFile(buf, key);
-      return { key, rows };
-    }));
-
-    let titles = [];
-    let allValidRows = [];
-
-    for (const { key, rows } of filesParsed) {
-      for (const row of rows) {
-        const result = validateDataRow(row);
-        if (result.valid && result.data.title) {
-          titles.push(result.data.title);
-          allValidRows.push(row);
-        } else {
-          await reportErrorToStrapi(result.raw, result.errors, key);
-        }
+    const filesGroupedByGBU = {};
+    for (const key of fileKeys) {
+      const gbuMatch = key.match(/^GBU(\d)\//);
+      if (!gbuMatch) continue;
+      const gbuNumber = gbuMatch[1];
+      const gbuCollection = `gbu${gbuNumber}`;
+      if (!filesGroupedByGBU[gbuCollection]) {
+        filesGroupedByGBU[gbuCollection] = [];
       }
+      filesGroupedByGBU[gbuCollection].push(key);
     }
 
-    await syncStrapi(allValidRows, strapiData, STRAPI_URL, STRAPI_TOKEN);
-    await deleteMissingStrapiEntries(strapiData, titles, STRAPI_URL, STRAPI_TOKEN);
-    console.log(`Done. ${titles.length} items processed.`);
+    for (const [collection, keys] of Object.entries(filesGroupedByGBU)) {
+      const GBU_API_MAP = {
+        gbu1: "gbus",
+        gbu2: "gbu2s",
+        gbu3: "gbu3s",
+        gbu4: "gbu4s"
+      };
+
+      const collectionUrl = `${STRAPI_URL.replace(/\/data-acts$/, '')}/api/${GBU_API_MAP[collection]}`;
+      console.log(`Processing collection ${collection}...`);
+
+      const strapiData = await getStrapiData(collectionUrl, STRAPI_TOKEN);
+      const filesParsed = await Promise.all(
+        keys.map(async key => {
+          const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+          const buf = await obj.Body.transformToByteArray();
+          const rows = await parseFile(buf, key);
+          return { key, rows };
+        })
+      );
+
+      let titles = [];
+      let allValidRows = [];
+
+      for (const { key, rows } of filesParsed) {
+        for (const row of rows) {
+          const result = validateDataRow(row);
+          if (result.valid && result.data.title) {
+            titles.push(result.data.title);
+            allValidRows.push(row);
+          } else {
+            await reportErrorToStrapi(result.raw, result.errors, key);
+          }
+        }
+      }
+
+      await syncStrapi(allValidRows, strapiData, collectionUrl, STRAPI_TOKEN);
+      await deleteMissingStrapiEntries(strapiData, titles, collectionUrl, STRAPI_TOKEN);
+
+      console.log(`Finished processing ${collection}: ${titles.length} entries.`);
+    }
+
+    console.log("All collections processed successfully.");
   } catch (err) {
-    console.error("Lambda error", err);
+    console.error("Lambda execution failed:", err);
     throw err;
   }
 };
