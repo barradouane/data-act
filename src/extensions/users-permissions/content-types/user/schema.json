@@ -65,6 +65,16 @@
       "target": "plugin::users-permissions.role",
       "inversedBy": "users",
       "configurable": false
+    },
+    "GBU": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "GBU1",
+        "GBU2",
+        "GBU3",
+        "GBU4"
+      ]
     }
   }
 }
