@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { useDataActs } from "../hooks/useDataAct";
+import { useDataActsByRole } from "../hooks/useDataActsByRole";
 import type { EChartsOption } from "echarts";
 
 export default function CountriesBarRaceChart() {
-  const { dataActs, loading } = useDataActs();
+  const { dataActs, loading } = useDataActsByRole();
   const [option, setOption] = useState<EChartsOption>({});
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const chartRef = useRef<any>(null);

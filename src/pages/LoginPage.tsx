@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+//Login page that authenticates the user with Strapi
+//Stores the JWT in localStorage for later API calls.
+
 export default function LoginPage() {
   const navigate = useNavigate();
 
@@ -11,6 +14,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  //Handles form submission for user login.
+  //Sends credentials to the backend proxy and stores the received JWT.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -30,12 +35,12 @@ export default function LoginPage() {
         }
       );
 
-      // Save JWT to localStorage
+      // Store JWT in localStorage for future authenticated requests
       localStorage.setItem("jwt", response.data.jwt);
-      console.log("Login success:", response.data.user);
-      navigate("/dashboard"); // or wherever you want
+
+      // Navigate to dashboard after successful login
+      navigate("/dashboard");
     } catch (err: any) {
-      console.error("Login failed:", err);
       const msg =
         err?.response?.data?.error?.message ||
         "Login failed. Please check your credentials.";
