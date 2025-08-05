@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { validators } from "../validators/authValidators"; // ✅ Externalized validation logic
 
 // Interface for the registration form structure
 interface RegisterForm {
@@ -14,8 +15,7 @@ interface RegisterForm {
 // List of GBU role options
 const GBU_OPTIONS = ["GBU1", "GBU2", "GBU3", "GBU4"];
 
-//Registration page that creates a new user account and assigns them to a selected GBU role.
-
+// Registration page that creates a new user account and assigns them to a selected GBU role.
 export default function RegisterPage() {
   const navigate = useNavigate();
 
@@ -35,22 +35,8 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Field validation rules
-  const validators: Record<keyof RegisterForm, (value: string) => string> = {
-    username: (v) => (!v.trim() ? "This field is required." : ""),
-    email: (v) =>
-      !v.trim()
-        ? "This field is required."
-        : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
-        ? "Invalid email address."
-        : "",
-    password: (v) =>
-      !v.trim() ? "This field is required." : v.length < 10 ? "Minimum 10 characters." : "",
-    confirmPassword: (v) =>
-      v !== formData.password ? "Passwords do not match." : "",
-    gbu: (v) => (!v ? "Please select a GBU." : ""),
-  };
-
-  const validateField = (name: keyof RegisterForm, value: string) => validators[name](value);
+  const validateField = (name: keyof RegisterForm, value: string) =>
+    validators[name](value, formData);
 
   // Handle field changes and trigger validation
   const handleChange = (
@@ -82,8 +68,8 @@ export default function RegisterPage() {
     return "Network or unknown error.";
   };
 
-  //Handles the registration form submission.
-  //Sends user credentials and selected GBU to the backend.
+  // Handles the registration form submission.
+  // Sends user credentials and selected GBU to the backend.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid()) return;
@@ -106,11 +92,12 @@ export default function RegisterPage() {
         }
       );
 
-      setSuccess("Account created! A confirmation email has been sent.");
+      // Reset error message if form succeeds
+      setError("");
+      setSuccess("Account created! Please check your email to confirm your account.");
       setFormData({ username: "", email: "", password: "", confirmPassword: "", gbu: "" });
       setFormErrors({});
       setTouched({});
-      setTimeout(() => navigate("/"), 3000);
     } catch (err: any) {
       setError(extractErrorMessage(err));
     } finally {
@@ -131,8 +118,16 @@ export default function RegisterPage() {
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
         {success ? (
-          <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6 text-center text-sm shadow-sm">
-            {success}
+          <div className="text-center space-y-6">
+            <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded-lg text-sm shadow-sm">
+              {success}
+            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-3 rounded-xl bg-white text-blue-700 border border-blue-300 hover:border-blue-400 hover:text-blue-800 transition font-medium text-sm shadow-sm"
+            >
+              Go to login page
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
