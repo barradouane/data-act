@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { validators } from "../validators/authValidators"; // ✅ Centralized validation
+import { validators } from "../validators/authValidators"; 
 
 // Login page that authenticates the user with Strapi
 // Stores the JWT in localStorage for later API calls.
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // ✅ Validate email and password using central validators
+    // Validate email and password using central validators
     const emailError = validators.email(email);
     const passwordError = validators.password(password);
 

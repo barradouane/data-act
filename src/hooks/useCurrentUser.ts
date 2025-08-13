@@ -29,7 +29,7 @@ export function useCurrentUser() {
     }
 
     // Fetch the current user from the backend proxy
-    fetch("https://localhost:4000/api/me", {
+    fetch(`${import.meta.env.VITE_PROXY_URL}/api/me`, {
       headers: {
         Authorization: `Bearer ${jwt}`,
         "X-API-KEY": import.meta.env.VITE_API_KEY,

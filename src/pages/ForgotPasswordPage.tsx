@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import type { FC } from "react";
-import { validators } from "../validators/authValidators"; // ✅ Centralized email validation
+import { validators } from "../validators/authValidators"; //  Centralized email validation
 
 // Page to request a password reset by providing an email address
 const ForgotPasswordPage: FC = () => {

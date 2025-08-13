@@ -16,7 +16,7 @@ export function useDataActsByRole() {
     const roleName = user.role.name.toLowerCase();
     const collection = roleName === "gbu1" ? "gbus" : `${roleName}s`;
 
-    const endpoint = `https://localhost:4000/api/${collection}`;
+    const endpoint = `${import.meta.env.VITE_PROXY_URL}/api/${collection}`;
     const jwt = localStorage.getItem("jwt");
     if (!jwt) return;
 

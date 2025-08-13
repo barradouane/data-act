@@ -77,7 +77,7 @@ export default function RegisterPage() {
 
     try {
       await axios.post(
-        "https://localhost:4000/api/auth/local/register",
+        `${import.meta.env.VITE_PROXY_URL}/api/auth/local/register`,
         {
           username: formData.username,
           email: formData.email,
