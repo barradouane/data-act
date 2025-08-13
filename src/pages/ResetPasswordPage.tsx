@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { validators } from "../validators/authValidators"; // ✅ Password validators reused
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
-  const code = searchParams.get("code"); 
+  const code = searchParams.get("code");
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
@@ -26,8 +27,17 @@ export default function ResetPasswordPage() {
     setError("");
     setSuccess("");
 
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+    const passwordError = validators.password(password);
+    const confirmError = validators.confirmPassword(confirmPassword, {
+      password,
+      confirmPassword,
+      username: "",
+      email: "",
+      gbu: "",
+    });
+
+    if (passwordError || confirmError) {
+      setError(passwordError || confirmError);
       return;
     }
 
@@ -40,7 +50,8 @@ export default function ResetPasswordPage() {
       });
 
       setSuccess("Mot de passe réinitialisé avec succès !");
-      setTimeout(() => navigate("/"), 3000);
+      setPassword("");
+      setConfirmPassword("");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const msg =
@@ -65,53 +76,61 @@ export default function ResetPasswordPage() {
           Choisissez un nouveau mot de passe sécurisé.
         </p>
 
-        {/* Display error if token invalid */}
+        {/* Error message (token or server) */}
         {isReady && error && (
           <div className="bg-red-50 border border-red-300 text-red-700 text-sm px-4 py-3 rounded-lg mb-4 text-center">
             {error}
           </div>
         )}
 
-        {/* Display form if token valid */}
-        {isReady && !error && (
-          <>
-            {success && (
-              <div className="bg-green-50 border border-green-300 text-green-700 text-sm px-4 py-3 rounded-lg mb-4 text-center">
-                {success} <br /> Redirection vers la connexion...
-              </div>
-            )}
+        {/* Success state */}
+        {isReady && !error && success ? (
+          <div className="text-center space-y-6">
+            <div className="bg-green-50 border border-green-300 text-green-700 text-sm px-4 py-3 rounded-lg shadow-sm">
+              {success}
+            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-3 rounded-xl bg-white text-blue-700 border border-blue-300 hover:border-blue-400 hover:text-blue-800 transition font-medium text-sm shadow-sm"
+            >
+              Go to login page
+            </button>
+          </div>
+        ) : null}
 
-            <form onSubmit={handleReset} className="space-y-5">
-              <input
-                type="password"
-                placeholder="Nouveau mot de passe"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border text-sm bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                required
-              />
+        {/* Reset form */}
+        {isReady && !error && !success && (
+          <form onSubmit={handleReset} className="space-y-5">
+            <input
+              type="password"
+              placeholder="Nouveau mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border text-sm bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
+              required
+            />
 
-              <input
-                type="password"
-                placeholder="Confirmez le mot de passe"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border text-sm bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                required
-              />
+            <input
+              type="password"
+              placeholder="Confirmez le mot de passe"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border text-sm bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
+              required
+            />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium text-sm hover:shadow-md transition"
-              >
-                {loading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
-              </button>
-            </form>
-          </>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium text-sm hover:shadow-md transition"
+            >
+              {loading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+            </button>
+          </form>
         )}
 
-        {/* Link back to login */}
+        {/* Back to login (footer) */}
+       {!success && (
         <p className="text-center text-sm text-gray-600 mt-6">
           Retour à{" "}
           <span
@@ -121,6 +140,7 @@ export default function ResetPasswordPage() {
             la connexion
           </span>
         </p>
+    )}
       </div>
     </div>
   );

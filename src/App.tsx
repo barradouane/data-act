@@ -7,6 +7,7 @@ import ConfirmEmailPage from "./pages/ConfirmEmailPage";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import RequireAuth from "./components/RequireAuth";
 
 export default function App() {
   return (
@@ -17,7 +18,15 @@ export default function App() {
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/dashboard" element={<CountriesBarRaceChart />} />
+        {/* Route protégée */}
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <CountriesBarRaceChart />
+            </RequireAuth>
+          }
+        />
       </Routes>
     </div>
   );

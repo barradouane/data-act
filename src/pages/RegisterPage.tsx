@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { validators } from "../validators/authValidators"; // ✅ Externalized validation logic
 
+// Interface for the registration form structure
 interface RegisterForm {
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
+  gbu: string;
 }
 
-// Page for user registration with validation and API call
+// List of GBU role options
+const GBU_OPTIONS = ["GBU1", "GBU2", "GBU3", "GBU4"];
+
+// Registration page that creates a new user account and assigns them to a selected GBU role.
 export default function RegisterPage() {
   const navigate = useNavigate();
 
@@ -18,6 +24,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    gbu: "",
   });
 
   const [formErrors, setFormErrors] = useState<Partial<RegisterForm>>({});
@@ -27,35 +34,19 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validation rules for each field
-  const validators: Record<keyof RegisterForm, (value: string) => string> = {
-    username: (v) => (!v.trim() ? "This field is required." : ""),
-    email: (v) =>
-      !v.trim()
-        ? "This field is required."
-        : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
-        ? "Invalid email address."
-        : "",
-    password: (v) =>
-      !v.trim() ? "This field is required." : v.length < 10 ? "Minimum 10 characters." : "",
-    confirmPassword: (v) =>
-      v !== formData.password ? "Passwords do not match." : "",
-  };
+  // Field validation rules
+  const validateField = (name: keyof RegisterForm, value: string) =>
+    validators[name](value, formData);
 
-  const validateField = (name: keyof RegisterForm, value: string) => validators[name](value);
-
-  const getInputType = (field: keyof RegisterForm): string => {
-    if (field === "email") return "email";
-    if (field.includes("password")) return showPassword ? "text" : "password";
-    return "text";
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle field changes and trigger validation
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target as { name: keyof RegisterForm; value: string };
     setFormData((prev) => ({ ...prev, [name]: value }));
     setTouched((prev) => ({ ...prev, [name]: true }));
     setFormErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
-    setError(""); 
+    setError("");
   };
 
   const isFormValid = () => {
@@ -65,6 +56,7 @@ export default function RegisterPage() {
     );
   };
 
+  // Extract readable error message from an Axios error
   const extractErrorMessage = (err: any): string => {
     if (axios.isAxiosError(err)) {
       return (
@@ -76,6 +68,8 @@ export default function RegisterPage() {
     return "Network or unknown error.";
   };
 
+  // Handles the registration form submission.
+  // Sends user credentials and selected GBU to the backend.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid()) return;
@@ -83,11 +77,12 @@ export default function RegisterPage() {
 
     try {
       await axios.post(
-        "https://localhost:4000/api/auth/local/register",
+        `${import.meta.env.VITE_PROXY_URL}/api/auth/local/register`,
         {
           username: formData.username,
           email: formData.email,
           password: formData.password,
+          gbu: formData.gbu,
         },
         {
           headers: {
@@ -97,11 +92,12 @@ export default function RegisterPage() {
         }
       );
 
-      setSuccess("Account created! A confirmation email has been sent.");
-      setFormData({ username: "", email: "", password: "", confirmPassword: "" });
+      // Reset error message if form succeeds
+      setError("");
+      setSuccess("Account created! Please check your email to confirm your account.");
+      setFormData({ username: "", email: "", password: "", confirmPassword: "", gbu: "" });
       setFormErrors({});
       setTouched({});
-      setTimeout(() => navigate("/"), 3000);
     } catch (err: any) {
       setError(extractErrorMessage(err));
     } finally {
@@ -122,23 +118,27 @@ export default function RegisterPage() {
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
         {success ? (
-          <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6 text-center text-sm shadow-sm">
-            {success}
+          <div className="text-center space-y-6">
+            <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded-lg text-sm shadow-sm">
+              {success}
+            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-3 rounded-xl bg-white text-blue-700 border border-blue-300 hover:border-blue-400 hover:text-blue-800 transition font-medium text-sm shadow-sm"
+            >
+              Go to login page
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            {(Object.keys(formData) as (keyof RegisterForm)[]).map((field) => (
+            {(["username", "email", "password", "confirmPassword"] as (keyof RegisterForm)[]).map((field) => (
               <div key={field}>
                 <input
                   required
                   id={field}
-                  type={getInputType(field)}
+                  type={field.includes("password") ? (showPassword ? "text" : "password") : field}
                   name={field}
-                  placeholder={
-                    field === "confirmPassword"
-                      ? "Confirm password"
-                      : field.charAt(0).toUpperCase() + field.slice(1)
-                  }
+                  placeholder={field === "confirmPassword" ? "Confirm password" : field.charAt(0).toUpperCase() + field.slice(1)}
                   value={formData[field]}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-xl border text-sm bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition ${
@@ -152,6 +152,31 @@ export default function RegisterPage() {
                 )}
               </div>
             ))}
+
+            {/* GBU selection dropdown */}
+            <div>
+              <select
+                required
+                name="gbu"
+                value={formData.gbu}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 rounded-xl border text-sm bg-white focus:outline-none focus:ring-2 ${
+                  formErrors.gbu
+                    ? "border-red-500 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
+              >
+                <option value="">Select your GBU</option>
+                {GBU_OPTIONS.map((gbu) => (
+                  <option key={gbu} value={gbu}>
+                    {gbu}
+                  </option>
+                ))}
+              </select>
+              {formErrors.gbu && touched.gbu && (
+                <p className="text-xs text-red-500 mt-1 ml-1">{formErrors.gbu}</p>
+              )}
+            </div>
 
             <div
               className="text-sm text-right text-blue-600 cursor-pointer hover:underline"
@@ -168,25 +193,6 @@ export default function RegisterPage() {
               {isSubmitting ? "Creating account..." : "Sign up"}
             </button>
           </form>
-        )}
-
-        {success ? (
-          <button
-            onClick={() => navigate("/")}
-            className="w-full py-3 rounded-xl bg-white text-blue-700 border border-blue-300 hover:border-blue-400 hover:text-blue-800 transition font-medium text-sm shadow-sm mt-4"
-          >
-            Go to login page
-          </button>
-        ) : (
-          <p className="text-center text-sm mt-6 text-gray-600">
-            Already have an account?
-            <span
-              onClick={() => navigate("/")}
-              className="text-blue-600 font-medium cursor-pointer hover:underline ml-1"
-            >
-              Log in here
-            </span>
-          </p>
         )}
       </div>
     </div>
